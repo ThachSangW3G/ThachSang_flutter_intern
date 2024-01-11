@@ -104,7 +104,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   return NotificationListener<ScrollNotification>(
                     onNotification: (ScrollNotification scrollInfo) {
                       if (scrollInfo is ScrollEndNotification) {
-                        context.read<StoryBloc>().add(GetStories());
+                        if (_scrollController.position.pixels ==
+                            _scrollController.position.maxScrollExtent) {
+                          context.read<StoryBloc>().add(GetStories());
+                        }
                       }
                       return false;
                     },
@@ -155,9 +158,9 @@ Widget _buildLoadMoreIndicator(BuildContext context) {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                      margin: const EdgeInsets.symmetric(vertical: 5),
-                      width: 20,
-                      height: 20,
+                      margin: const EdgeInsets.symmetric(vertical: 10),
+                      width: 25,
+                      height: 25,
                       child: const CircularProgressIndicator()),
                 ],
               )

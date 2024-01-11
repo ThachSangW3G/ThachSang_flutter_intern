@@ -18,68 +18,81 @@ class _StoryComponentState extends State<StoryComponent> {
     return Container(
       margin: EdgeInsets.symmetric(vertical: 5),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        child: Row(
-          children: [
-            Container(
-              height: 130,
-              width: 180,
-              decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border(bottom: BorderSide(width: 1)),
-                  image: DecorationImage(
-                      fit: BoxFit.cover,
-                      image: NetworkImage(widget.story.image))),
-              child: Align(
-                alignment: Alignment.bottomRight,
-                child: IconButton(
-                  onPressed: () {},
-                  icon: SvgPicture.asset(
-                    'assets/icons/news.svg',
-                    height: 35,
-                    width: 35,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+        child: Container(
+          decoration: const BoxDecoration(
+            border: Border(
+                bottom: BorderSide(
+                    width: 1, color: Color.fromRGBO(182, 181, 203, 1))),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    height: 130,
+                    width: 180,
+                    decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        image: DecorationImage(
+                            fit: BoxFit.cover,
+                            image: NetworkImage(widget.story.image))),
+                    child: Align(
+                      alignment: Alignment.bottomRight,
+                      child: IconButton(
+                        onPressed: () {},
+                        icon: SvgPicture.asset(
+                          'assets/icons/news.svg',
+                          height: 35,
+                          width: 35,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  Expanded(
+                    child: Column(children: [
+                      Text(
+                        widget.story.title,
+                        style: const TextStyle(
+                            fontFamily: 'Open Sans',
+                            color: Color.fromRGBO(29, 26, 97, 1),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600),
+                      ),
+                      Text(
+                        widget.story.summary,
+                        maxLines: 2,
+                        style: const TextStyle(
+                            fontFamily: 'Open Sans',
+                            color: Color.fromRGBO(29, 26, 97, 1),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500),
+                      ),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          DateFormat('MMM d, y').format(dateTime!),
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                              fontFamily: 'Open Sans',
+                              color: Color.fromRGBO(29, 26, 97, 1),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              fontStyle: FontStyle.italic),
+                        ),
+                      )
+                    ]),
+                  )
+                ],
               ),
-            ),
-            const SizedBox(
-              width: 10,
-            ),
-            Expanded(
-              child: Column(children: [
-                Text(
-                  widget.story.title,
-                  style: const TextStyle(
-                      fontFamily: 'Open Sans',
-                      color: Color.fromRGBO(29, 26, 97, 1),
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600),
-                ),
-                Text(
-                  widget.story.summary,
-                  maxLines: 2,
-                  style: const TextStyle(
-                      fontFamily: 'Open Sans',
-                      color: Color.fromRGBO(29, 26, 97, 1),
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500),
-                ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    DateFormat('MMM d, y').format(dateTime!),
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(
-                        fontFamily: 'Open Sans',
-                        color: Color.fromRGBO(29, 26, 97, 1),
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        fontStyle: FontStyle.italic),
-                  ),
-                )
-              ]),
-            )
-          ],
+              const SizedBox(
+                height: 10,
+              )
+            ],
+          ),
         ),
       ),
     );
