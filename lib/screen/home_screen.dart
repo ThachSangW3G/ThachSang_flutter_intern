@@ -3,6 +3,7 @@ import 'package:bai5_bloc_dio/blocs/story_bloc/story_event.dart';
 import 'package:bai5_bloc_dio/blocs/story_bloc/story_state.dart';
 import 'package:bai5_bloc_dio/components/story_component.dart';
 import 'package:bai5_bloc_dio/repositories/story_repository.dart';
+import 'package:bai5_bloc_dio/services/internet_connect.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -39,6 +40,23 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _showScrollToTopButton = false;
       });
+    }
+  }
+
+  void showNoInternetSnackBar(BuildContext context) {
+    final snackBar = SnackBar(
+      content: Text('Không có kết nối internet'),
+      duration: Duration(seconds: 3),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+
+  void someFunction(BuildContext context) async {
+    if (await InternetConnect().isInternetConnected()) {
+      // Logic khi có kết nối internet
+    } else {
+      // Hiển thị SnackBar khi không có kết nối internet
+      showNoInternetSnackBar(context);
     }
   }
 
@@ -107,6 +125,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         if (_scrollController.position.pixels ==
                             _scrollController.position.maxScrollExtent) {
                           context.read<StoryBloc>().add(GetStories());
+                          if (state.isLoadedLocal == true) {
+                            showNoInternetSnackBar(context);
+                          }
                         }
                       }
                       return false;

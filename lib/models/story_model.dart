@@ -1,3 +1,6 @@
+import 'package:json_annotation/json_annotation.dart';
+
+@JsonSerializable()
 class Story {
   final int storyId;
   final String title;
@@ -19,5 +22,15 @@ class Story {
         summary: json['summary'] ?? '',
         modifiedAt: json['modifiedAt'] ?? '',
         image: json['image'] ?? '');
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'storyId': storyId,
+      'title': title,
+      'summary': summary,
+      'modifiedAt': modifiedAt,
+      'image': image
+    };
   }
 }

@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:bai5_bloc_dio/exceptions/data_fetch_exception.dart';
 import 'package:bai5_bloc_dio/models/story_model.dart';
 import 'package:dio/dio.dart';
 
@@ -20,8 +23,12 @@ class StoryRepository {
       } else {
         throw Exception('Failed to load data');
       }
+    } on DioException catch (e) {
+      throw DataFetchException('Lỗi ${e.message}');
+    } on SocketException catch (e) {
+      throw DataFetchException('Lỗi: Không có kết nối internet');
     } catch (e) {
-      throw Exception('Error: $e');
+      throw DataFetchException('Lỗi: $e');
     }
   }
 }
