@@ -25,7 +25,7 @@ class StoryRepository {
       }
     } on DioException catch (e) {
       throw DataFetchException('Lỗi ${e.message}');
-    } on SocketException catch (e) {
+    } on SocketException {
       throw DataFetchException('Lỗi: Không có kết nối internet');
     } catch (e) {
       throw DataFetchException('Lỗi: $e');
