@@ -1,11 +1,5 @@
-import 'package:bai5_bloc_dio/blocs/story_bloc/story_bloc.dart';
-import 'package:bai5_bloc_dio/blocs/story_bloc/story_event.dart';
-import 'package:bai5_bloc_dio/blocs/story_bloc/story_state.dart';
-import 'package:bai5_bloc_dio/components/story_component.dart';
-import 'package:bai5_bloc_dio/repositories/story_repository.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter/services.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,29 +9,40 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final ScrollController _scrollController = ScrollController();
-  bool _showScrollToTopButton = false;
+  static const deviceInfoChannel = MethodChannel('deviceInfoChannel');
+  static const batteryStatusChannel = EventChannel('batteryStatusEvent');
+
+  String levelString = 'Unknown';
+  bool isCharging = false;
+  double batteryLevel = 0;
+  String deviceInfo = 'Unknown';
 
   @override
   void initState() {
+    // TODO: implement initState
     super.initState();
-    _scrollController.addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scrollController.offset > 200 && !_showScrollToTopButton) {
+    batteryStatusChannel.receiveBroadcastStream().listen((dynamic event) {
+      Map<String, dynamic> batteryStatus = Map.from(event);
       setState(() {
-        _showScrollToTopButton = true;
+        levelString = batteryStatus['batteryLevel'].toStringAsFixed(1) + '%';
+        isCharging = batteryStatus['charging'];
+        batteryLevel = batteryStatus['batteryLevel'];
       });
-    } else if (_scrollController.offset <= 200 && _showScrollToTopButton) {
+    });
+
+    fetchDeviceInfo();
+  }
+
+  Future<void> fetchDeviceInfo() async {
+    try {
+      final String result =
+          await deviceInfoChannel.invokeMethod('getDeviceInfo');
       setState(() {
-        _showScrollToTopButton = false;
+        deviceInfo = result;
+      });
+    } on PlatformException catch (e) {
+      setState(() {
+        deviceInfo = 'Error: ${e.message}';
       });
     }
   }
@@ -45,127 +50,49 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          onPressed: () {},
-          icon: SizedBox(
-            height: 30,
-            width: 30,
-            child: SvgPicture.asset(
-              'assets/icons/menu.svg',
-            ),
-          ),
-        ),
-        centerTitle: true,
-        title: const Text(
-          'My News',
-          style: TextStyle(
-              color: Colors.white,
-              fontFamily: 'Open Sans',
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1.1,
-              fontSize: 25),
-        ),
-        toolbarHeight: 100,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: <Color>[
-                  Color.fromRGBO(29, 30, 99, 1),
-                  Color.fromRGBO(24, 215, 183, 1)
-                ]),
-          ),
-        ),
-      ),
-      body: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 10.0, vertical: 10),
-          child: Text(
-            'News',
-            style: TextStyle(
-                fontFamily: 'Open Sans',
-                color: Colors.black,
-                fontWeight: FontWeight.w800,
-                fontSize: 20),
-          ),
-        ),
-        Expanded(
-          child: RepositoryProvider(
-            create: (context) => StoryRepository(),
-            child: BlocProvider(
-              create: (context) => StoryBloc(
-                  storyRepository:
-                      RepositoryProvider.of<StoryRepository>(context),
-                  scrollController: _scrollController),
-              child: BlocBuilder<StoryBloc, StoryState>(
-                builder: (context, state) {
-                  return NotificationListener<ScrollNotification>(
-                    onNotification: (ScrollNotification scrollInfo) {
-                      if (scrollInfo is ScrollEndNotification) {
-                        if (_scrollController.position.pixels ==
-                            _scrollController.position.maxScrollExtent) {
-                          context.read<StoryBloc>().add(GetStories());
-                        }
-                      }
-                      return false;
-                    },
-                    child: CustomScrollView(
-                      controller: _scrollController,
-                      slivers: [
-                        SliverList(
-                            delegate:
-                                SliverChildBuilderDelegate((context, index) {
-                          return StoryComponent(
-                            story: state.stories[index],
-                          );
-                        }, childCount: state.stories.length)),
-                        _buildLoadMoreIndicator(context)
-                      ],
-                    ),
-                  );
-                },
+      body: Center(
+        child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                'Device Info: $deviceInfo',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 20),
               ),
-            ),
-          ),
-        )
-      ]),
-      floatingActionButton: _showScrollToTopButton
-          ? FloatingActionButton(
-              onPressed: () {
-                _scrollController.animateTo(
-                  0.0,
-                  duration: const Duration(milliseconds: 500),
-                  curve: Curves.easeInOut,
-                );
-              },
-              shape: const CircleBorder(),
-              backgroundColor: const Color.fromRGBO(95, 93, 143, 0.7),
-              child: SvgPicture.asset('assets/icons/scroll_to_top.svg'),
-            )
-          : null,
+              SizedBox(
+                height: 20,
+              ),
+              Text(
+                'Charging: ${isCharging ? 'Yes' : 'No'}',
+                style: TextStyle(fontSize: 20),
+              ),
+              SizedBox(
+                height: 20,
+              ),
+              Container(
+                height: 100,
+                width: 60,
+                decoration: BoxDecoration(
+                    image: DecorationImage(
+                        fit: BoxFit.cover,
+                        image: ExactAssetImage(isCharging
+                            ? 'assets/images/battery_changing.png'
+                            : batteryLevel >= 0 && batteryLevel < 25
+                                ? 'assets/images/battery_level_1.png'
+                                : batteryLevel >= 25 && batteryLevel < 50
+                                    ? 'assets/images/battery_level_2.png'
+                                    : batteryLevel >= 50 && batteryLevel < 75
+                                        ? 'assets/images/battery_level_3.png'
+                                        : 'assets/images/battery_level_4.png'))),
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Battery Level: $levelString',
+                style: TextStyle(fontSize: 20),
+              ),
+            ]),
+      ),
     );
   }
-}
-
-Widget _buildLoadMoreIndicator(BuildContext context) {
-  return SliverToBoxAdapter(
-    child: BlocBuilder<StoryBloc, StoryState>(
-      builder: (context, state) {
-        return state.isLoading
-            ? Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                      margin: const EdgeInsets.symmetric(vertical: 10),
-                      width: 25,
-                      height: 25,
-                      child: const CircularProgressIndicator()),
-                ],
-              )
-            : const SizedBox.shrink();
-      },
-    ),
-  );
 }
