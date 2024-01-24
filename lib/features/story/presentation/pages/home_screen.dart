@@ -1,9 +1,9 @@
-import 'package:bai5_bloc_dio/blocs/story_bloc/story_bloc.dart';
-import 'package:bai5_bloc_dio/blocs/story_bloc/story_event.dart';
-import 'package:bai5_bloc_dio/blocs/story_bloc/story_state.dart';
-import 'package:bai5_bloc_dio/components/story_component.dart';
-import 'package:bai5_bloc_dio/repositories/story_repository.dart';
-import 'package:bai5_bloc_dio/services/internet_connect.dart';
+import 'package:bai5_bloc_dio/features/story/presentation/widgets/story_widget.dart';
+import 'package:bai5_bloc_dio/features/story/presentation/bloc/story/remote/remote_story_bloc.dart';
+import 'package:bai5_bloc_dio/features/story/presentation/bloc/story/remote/remote_story_event.dart';
+import 'package:bai5_bloc_dio/features/story/presentation/bloc/story/remote/remote_story_state.dart';
+import 'package:bai5_bloc_dio/core/util/internet_connect.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -110,45 +110,32 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         Expanded(
-          child: RepositoryProvider(
-            create: (context) => StoryRepository(),
-            child: BlocProvider(
-              create: (context) => StoryBloc(
-                  storyRepository:
-                      RepositoryProvider.of<StoryRepository>(context),
-                  scrollController: _scrollController),
-              child: BlocBuilder<StoryBloc, StoryState>(
-                builder: (context, state) {
-                  return NotificationListener<ScrollNotification>(
-                    onNotification: (ScrollNotification scrollInfo) {
-                      if (scrollInfo is ScrollEndNotification) {
-                        if (_scrollController.position.pixels ==
-                            _scrollController.position.maxScrollExtent) {
-                          context.read<StoryBloc>().add(GetStories());
-                          if (state.isLoadedLocal == true) {
-                            showNoInternetSnackBar(context);
-                          }
-                        }
-                      }
-                      return false;
-                    },
-                    child: CustomScrollView(
-                      controller: _scrollController,
-                      slivers: [
-                        SliverList(
-                            delegate:
-                                SliverChildBuilderDelegate((context, index) {
-                          return StoryComponent(
-                            story: state.stories[index],
-                          );
-                        }, childCount: state.stories.length)),
-                        _buildLoadMoreIndicator(context)
-                      ],
-                    ),
-                  );
+          child: BlocBuilder<RemoteStoryBloc, RemoteStoryState>(
+            builder: (context, state) {
+              return NotificationListener<ScrollNotification>(
+                onNotification: (ScrollNotification scrollInfo) {
+                  if (scrollInfo is ScrollEndNotification) {
+                    if (_scrollController.position.pixels ==
+                        _scrollController.position.maxScrollExtent) {
+                      context.read<RemoteStoryBloc>().add(const GetStories());
+                    }
+                  }
+                  return false;
                 },
-              ),
-            ),
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  slivers: [
+                    SliverList(
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                      return StoryWidget(
+                        story: state.stories[index],
+                      );
+                    }, childCount: state.stories.length)),
+                    _buildLoadMoreIndicator(context)
+                  ],
+                ),
+              );
+            },
           ),
         )
       ]),
@@ -172,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 Widget _buildLoadMoreIndicator(BuildContext context) {
   return SliverToBoxAdapter(
-    child: BlocBuilder<StoryBloc, StoryState>(
+    child: BlocBuilder<RemoteStoryBloc, RemoteStoryState>(
       builder: (context, state) {
         return state.isLoading
             ? Row(
@@ -182,7 +169,7 @@ Widget _buildLoadMoreIndicator(BuildContext context) {
                       margin: const EdgeInsets.symmetric(vertical: 10),
                       width: 25,
                       height: 25,
-                      child: const CircularProgressIndicator()),
+                      child: const CupertinoActivityIndicator()),
                 ],
               )
             : const SizedBox.shrink();

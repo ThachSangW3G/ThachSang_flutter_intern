@@ -1,4 +1,5 @@
-import 'package:bai5_bloc_dio/models/story_model.dart';
+import 'package:bai5_bloc_dio/features/story/data/models/story_model.dart';
+import 'package:bai5_bloc_dio/features/story/domain/entities/story_entity.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -35,7 +36,7 @@ class DatabaseHelper {
     );
   }
 
-  Future<void> saveStories(List<Story> stories) async {
+  Future<void> saveStories(List<StoryEntity> stories) async {
     Database db = await database;
     Batch batch = db.batch();
     stories.forEach((story) {
@@ -45,10 +46,10 @@ class DatabaseHelper {
     await batch.commit();
   }
 
-  Future<List<Story>> getStories() async {
+  Future<List<StoryModel>> getStories() async {
     Database db = await database;
     List<Map<String, dynamic>> results = await db.query('Stories');
-    return results.map((map) => Story.fromJson(map)).toList();
+    return results.map((map) => StoryModel.fromJson(map)).toList();
   }
 
   Future<void> deleteAllStories() async {

@@ -1,17 +1,17 @@
-import 'package:bai5_bloc_dio/models/story_model.dart';
+import 'package:bai5_bloc_dio/features/story/domain/entities/story_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 
-class StoryComponent extends StatefulWidget {
-  final Story story;
-  const StoryComponent({super.key, required this.story});
+class StoryWidget extends StatefulWidget {
+  final StoryEntity story;
+  const StoryWidget({super.key, required this.story});
 
   @override
-  State<StoryComponent> createState() => _StoryComponentState();
+  State<StoryWidget> createState() => _StoryComponentState();
 }
 
-class _StoryComponentState extends State<StoryComponent> {
+class _StoryComponentState extends State<StoryWidget> {
   @override
   Widget build(BuildContext context) {
     final dateTime = DateTime.tryParse(widget.story.modifiedAt);
