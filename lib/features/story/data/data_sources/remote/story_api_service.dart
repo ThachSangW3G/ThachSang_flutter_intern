@@ -1,4 +1,4 @@
-import 'package:bai5_bloc_dio/core/resources/data_state.dart';
+import 'package:bai5_bloc_dio/core/exceptions/remote_exception.dart';
 import 'package:bai5_bloc_dio/features/story/data/models/story_model.dart';
 import 'package:dio/dio.dart';
 
@@ -21,15 +21,12 @@ class StoryApiServiceImpl implements StoryApiService {
       );
 
       print(response);
-      print((response.data as List).map((storyJson) {
-        return StoryModel.fromJson(storyJson);
-      }).toList());
 
       return (response.data as List).map((storyJson) {
         return StoryModel.fromJson(storyJson);
       }).toList();
     } on DioException catch (e) {
-      throw DataFailed(e);
+      throw RemoteException(e.message!, 500);
     }
   }
 }

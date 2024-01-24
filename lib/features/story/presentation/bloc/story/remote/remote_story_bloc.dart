@@ -53,7 +53,7 @@ class RemoteStoryBloc extends Bloc<RemoteStoriyEvent, RemoteStoryState> {
         }
       }
     } on DioException catch (e) {
-      emit(state.copyWith(isLoading: false, error: e.message));
+      emit(state.copyWith(isLoading: false, error: 'Error: $e'));
     }
   }
 }
