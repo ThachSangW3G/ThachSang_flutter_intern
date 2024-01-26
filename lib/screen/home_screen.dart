@@ -110,7 +110,8 @@ class _HomeScreenState extends State<HomeScreen> {
           FloatingActionButton(
             onPressed: () {
               setState(() {
-                shapes.add(RectangleShape(center: getCenterOfScreen(context)));
+                shapes.add(RectangleShape(
+                    center: getCenterOfScreen(context), origin: origin));
                 scaleShapeFactor.add(1.0);
                 initialScaleShape.add(1.0);
               });
@@ -124,7 +125,8 @@ class _HomeScreenState extends State<HomeScreen> {
           FloatingActionButton(
             onPressed: () {
               setState(() {
-                shapes.add(CircleShape(center: getCenterOfScreen(context)));
+                shapes.add(CircleShape(
+                    center: getCenterOfScreen(context), origin: origin));
                 scaleShapeFactor.add(1.0);
                 initialScaleShape.add(1.0);
               });
