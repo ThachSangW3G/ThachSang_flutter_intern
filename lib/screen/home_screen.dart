@@ -1,11 +1,8 @@
-import 'package:bai5_bloc_dio/blocs/story_bloc/story_bloc.dart';
-import 'package:bai5_bloc_dio/blocs/story_bloc/story_event.dart';
-import 'package:bai5_bloc_dio/blocs/story_bloc/story_state.dart';
-import 'package:bai5_bloc_dio/components/story_component.dart';
-import 'package:bai5_bloc_dio/repositories/story_repository.dart';
+import 'dart:math';
+
+import 'package:bai5_bloc_dio/widgets/axes_painter.dart';
+import 'package:bai5_bloc_dio/widgets/shape.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,157 +12,135 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final ScrollController _scrollController = ScrollController();
-  bool _showScrollToTopButton = false;
+  Offset origin = const Offset(0, 0);
+  double initialScale = 1.0;
+  double scaleFactor = 1.0;
 
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-  }
+  List<double> initialScaleShape = [];
+  List<double> scaleShapeFactor = [];
 
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
+  Offset initialOffsetShape = Offset.zero;
+  Offset offsetShapeFactor = Offset.zero;
 
-  void _onScroll() {
-    if (_scrollController.offset > 200 && !_showScrollToTopButton) {
-      setState(() {
-        _showScrollToTopButton = true;
-      });
-    } else if (_scrollController.offset <= 200 && _showScrollToTopButton) {
-      setState(() {
-        _showScrollToTopButton = false;
-      });
-    }
-  }
-
+  List<Shape> shapes = [];
+  int? indexSelectShape;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          onPressed: () {},
-          icon: SizedBox(
-            height: 30,
-            width: 30,
-            child: SvgPicture.asset(
-              'assets/icons/menu.svg',
-            ),
-          ),
-        ),
-        centerTitle: true,
-        title: const Text(
-          'My News',
-          style: TextStyle(
-              color: Colors.white,
-              fontFamily: 'Open Sans',
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1.1,
-              fontSize: 25),
-        ),
-        toolbarHeight: 100,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: <Color>[
-                  Color.fromRGBO(29, 30, 99, 1),
-                  Color.fromRGBO(24, 215, 183, 1)
-                ]),
+      body: Center(
+        child: GestureDetector(
+          onLongPressMoveUpdate: (details) {
+            setState(() {
+              if (indexSelectShape != null) {
+                offsetShapeFactor =
+                    initialOffsetShape + details.localOffsetFromOrigin;
+                shapes[indexSelectShape!].center = offsetShapeFactor;
+              }
+            });
+          },
+          onLongPressEnd: (LongPressEndDetails details) {
+            // Khi ngón tay nhấn giữ kết thúc, reset đối tượng Shape được chọn
+            indexSelectShape = null;
+          },
+          onLongPressStart: (LongPressStartDetails details) {
+            for (var shape in shapes) {
+              if (shape is RectangleShape) {
+                final transformedCenter =
+                    shape.center * shape.scale + shape.offset;
+                if (details.localPosition.dx >=
+                        transformedCenter.dx - shape.width / 2 * shape.scale &&
+                    details.localPosition.dx <=
+                        transformedCenter.dx + shape.width / 2 * shape.scale &&
+                    details.localPosition.dy >=
+                        transformedCenter.dy - shape.height / 2 * shape.scale &&
+                    details.localPosition.dy <=
+                        transformedCenter.dy + shape.height / 2 * shape.scale) {
+                  indexSelectShape = shapes.indexOf(shape);
+                  initialOffsetShape = shape.center;
+                }
+              } else if (shape is CircleShape) {
+                final transformedCenter =
+                    shape.center * shape.scale + shape.offset;
+                final distance = sqrt(
+                  pow(details.localPosition.dx - transformedCenter.dx, 2) +
+                      pow(details.localPosition.dy - transformedCenter.dy, 2),
+                );
+
+                if (distance <= shape.radius * shape.scale) {
+                  indexSelectShape = shapes.indexOf(shape);
+                  initialOffsetShape = shape.center;
+                }
+              }
+            }
+          },
+          onScaleStart: (details) {
+            initialScale = scaleFactor;
+            for (var shape in shapes) {
+              initialScaleShape[shapes.indexOf(shape)] =
+                  scaleShapeFactor[shapes.indexOf(shape)];
+            }
+          },
+          onScaleUpdate: (ScaleUpdateDetails details) {
+            setState(() {
+              if (details.pointerCount == 1) {
+                origin += details.focalPointDelta;
+                shapes.forEach((shape) {
+                  shape.offset += details.focalPointDelta;
+                });
+              } else {
+                scaleFactor = initialScale * details.scale;
+                shapes.forEach((shape) {
+                  shape.scale =
+                      initialScaleShape[shapes.indexOf(shape)] * details.scale;
+                });
+              }
+            });
+          },
+          child: CustomPaint(
+            key: UniqueKey(),
+            painter: AxesPainter(origin, scaleFactor, shapes),
+            child: Container(),
           ),
         ),
       ),
-      body: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 10.0, vertical: 10),
-          child: Text(
-            'News',
-            style: TextStyle(
-                fontFamily: 'Open Sans',
-                color: Colors.black,
-                fontWeight: FontWeight.w800,
-                fontSize: 20),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            onPressed: () {
+              setState(() {
+                shapes.add(RectangleShape(center: getCenterOfScreen(context)));
+                scaleShapeFactor.add(1.0);
+                initialScaleShape.add(1.0);
+              });
+            },
+            shape: CircleBorder(),
+            child: Icon(Icons.rectangle),
           ),
-        ),
-        Expanded(
-          child: RepositoryProvider(
-            create: (context) => StoryRepository(),
-            child: BlocProvider(
-              create: (context) => StoryBloc(
-                  storyRepository:
-                      RepositoryProvider.of<StoryRepository>(context),
-                  scrollController: _scrollController),
-              child: BlocBuilder<StoryBloc, StoryState>(
-                builder: (context, state) {
-                  return NotificationListener<ScrollNotification>(
-                    onNotification: (ScrollNotification scrollInfo) {
-                      if (scrollInfo is ScrollEndNotification) {
-                        if (_scrollController.position.pixels ==
-                            _scrollController.position.maxScrollExtent) {
-                          context.read<StoryBloc>().add(GetStories());
-                        }
-                      }
-                      return false;
-                    },
-                    child: CustomScrollView(
-                      controller: _scrollController,
-                      slivers: [
-                        SliverList(
-                            delegate:
-                                SliverChildBuilderDelegate((context, index) {
-                          return StoryComponent(
-                            story: state.stories[index],
-                          );
-                        }, childCount: state.stories.length)),
-                        _buildLoadMoreIndicator(context)
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
+          SizedBox(
+            height: 20,
           ),
-        )
-      ]),
-      floatingActionButton: _showScrollToTopButton
-          ? FloatingActionButton(
-              onPressed: () {
-                _scrollController.animateTo(
-                  0.0,
-                  duration: const Duration(milliseconds: 500),
-                  curve: Curves.easeInOut,
-                );
-              },
-              shape: const CircleBorder(),
-              backgroundColor: const Color.fromRGBO(95, 93, 143, 0.7),
-              child: SvgPicture.asset('assets/icons/scroll_to_top.svg'),
-            )
-          : null,
+          FloatingActionButton(
+            onPressed: () {
+              setState(() {
+                shapes.add(CircleShape(center: getCenterOfScreen(context)));
+                scaleShapeFactor.add(1.0);
+                initialScaleShape.add(1.0);
+              });
+            },
+            shape: CircleBorder(),
+            child: Icon(Icons.circle),
+          )
+        ],
+      ),
     );
   }
 }
 
-Widget _buildLoadMoreIndicator(BuildContext context) {
-  return SliverToBoxAdapter(
-    child: BlocBuilder<StoryBloc, StoryState>(
-      builder: (context, state) {
-        return state.isLoading
-            ? Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                      margin: const EdgeInsets.symmetric(vertical: 10),
-                      width: 25,
-                      height: 25,
-                      child: const CircularProgressIndicator()),
-                ],
-              )
-            : const SizedBox.shrink();
-      },
-    ),
-  );
+Offset getCenterOfScreen(BuildContext context) {
+  final screenSize = MediaQuery.of(context).size;
+  final centerX = screenSize.width / 2;
+  final centerY = screenSize.height / 2;
+  return Offset(centerX, centerY);
 }
