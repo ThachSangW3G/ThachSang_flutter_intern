@@ -5,7 +5,8 @@ import 'package:bai5_bloc_dio/widgets/shape.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final Size screenSize;
+  const HomeScreen({super.key, required this.screenSize});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -16,14 +17,36 @@ class _HomeScreenState extends State<HomeScreen> {
   double initialScale = 1.0;
   double scaleFactor = 1.0;
 
-  List<double> initialScaleShape = [];
-  List<double> scaleShapeFactor = [];
+  Offset? touchCenter;
+  Offset centerPoint = const Offset(0, 0);
+  Offset oldCenterPoint = const Offset(0, 0);
 
-  Offset initialOffsetShape = Offset.zero;
-  Offset offsetShapeFactor = Offset.zero;
+  late Offset oldStartDrag;
+  late double scale;
+  late double oldScale;
 
   List<Shape> shapes = [];
   int? indexSelectShape;
+
+  @override
+  void initState() {
+    super.initState();
+    scale = 1.0;
+    oldScale = scale;
+  }
+
+  Offset getPointAxis(Offset offset) {
+    Offset distance = offset - centerPoint;
+    Offset axisOffset = Offset(distance.dx / scale, -(distance.dy / scale));
+    return axisOffset;
+  }
+
+  Offset getCenterOfScreen(Size screenSize) {
+    final centerX = screenSize.width / 2;
+    final centerY = screenSize.height / 2;
+    return getPointAxis(Offset(centerX, centerY));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -32,73 +55,70 @@ class _HomeScreenState extends State<HomeScreen> {
           onLongPressMoveUpdate: (details) {
             setState(() {
               if (indexSelectShape != null) {
-                offsetShapeFactor =
-                    initialOffsetShape + details.localOffsetFromOrigin;
-                shapes[indexSelectShape!].center = offsetShapeFactor;
+                shapes[indexSelectShape!].center =
+                    getPointAxis(details.localPosition);
               }
             });
           },
           onLongPressEnd: (LongPressEndDetails details) {
-            // Khi ngón tay nhấn giữ kết thúc, reset đối tượng Shape được chọn
             indexSelectShape = null;
           },
           onLongPressStart: (LongPressStartDetails details) {
             for (var shape in shapes) {
               if (shape is RectangleShape) {
-                final transformedCenter =
-                    shape.center * shape.scale + shape.offset;
-                if (details.localPosition.dx >=
-                        transformedCenter.dx - shape.width / 2 * shape.scale &&
-                    details.localPosition.dx <=
-                        transformedCenter.dx + shape.width / 2 * shape.scale &&
-                    details.localPosition.dy >=
-                        transformedCenter.dy - shape.height / 2 * shape.scale &&
-                    details.localPosition.dy <=
-                        transformedCenter.dy + shape.height / 2 * shape.scale) {
+                final position = getPointAxis(details.localPosition);
+                if (position.dx >= shape.center.dx - shape.width / 2 &&
+                    position.dx <= shape.center.dx + shape.width / 2 &&
+                    position.dy >= shape.center.dy - shape.height / 2 &&
+                    position.dy <= shape.center.dy + shape.height / 2) {
                   indexSelectShape = shapes.indexOf(shape);
-                  initialOffsetShape = shape.center;
                 }
               } else if (shape is CircleShape) {
-                final transformedCenter =
-                    shape.center * shape.scale + shape.offset;
+                final position = getPointAxis(details.localPosition);
                 final distance = sqrt(
-                  pow(details.localPosition.dx - transformedCenter.dx, 2) +
-                      pow(details.localPosition.dy - transformedCenter.dy, 2),
+                  pow(position.dx - shape.center.dx, 2) +
+                      pow(position.dy - shape.center.dy, 2),
                 );
 
-                if (distance <= shape.radius * shape.scale) {
+                if (distance <= shape.radius) {
                   indexSelectShape = shapes.indexOf(shape);
-                  initialOffsetShape = shape.center;
                 }
               }
             }
           },
           onScaleStart: (details) {
-            initialScale = scaleFactor;
-            for (var shape in shapes) {
-              initialScaleShape[shapes.indexOf(shape)] =
-                  scaleShapeFactor[shapes.indexOf(shape)];
-            }
+            oldScale = scale;
+            oldCenterPoint = centerPoint;
+            touchCenter = null;
+
+            oldStartDrag = details.localFocalPoint;
+            oldCenterPoint = centerPoint;
           },
           onScaleUpdate: (ScaleUpdateDetails details) {
             setState(() {
               if (details.pointerCount == 1) {
-                origin += details.focalPointDelta;
-                shapes.forEach((shape) {
-                  shape.offset += details.focalPointDelta;
-                });
+                final distance = details.localFocalPoint - oldStartDrag;
+                centerPoint = oldCenterPoint + distance;
               } else {
-                scaleFactor = initialScale * details.scale;
-                shapes.forEach((shape) {
-                  shape.scale =
-                      initialScaleShape[shapes.indexOf(shape)] * details.scale;
-                });
+                scale = oldScale * details.scale;
+
+                touchCenter ??= details.focalPoint;
+
+                if (scale >= 0.1 && scale <= 15 && touchCenter != null) {
+                  var dis = touchCenter! - oldCenterPoint;
+                  dis *= details.scale;
+                  centerPoint = touchCenter! - dis;
+                } else {
+                  if (scale > 15) scale = 15;
+                  if (scale < 0.1) scale = 0.1;
+                }
               }
             });
           },
           child: CustomPaint(
             key: UniqueKey(),
-            painter: AxesPainter(origin, scaleFactor, shapes),
+            painter: AxesPainter(
+                centerPoint: centerPoint, scale: scale, shapes: shapes),
             child: Container(),
           ),
         ),
@@ -111,38 +131,27 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               setState(() {
                 shapes.add(RectangleShape(
-                    center: getCenterOfScreen(context), origin: origin));
-                scaleShapeFactor.add(1.0);
-                initialScaleShape.add(1.0);
+                    center: getCenterOfScreen(widget.screenSize)));
               });
             },
-            shape: CircleBorder(),
-            child: Icon(Icons.rectangle),
+            shape: const CircleBorder(),
+            child: const Icon(Icons.rectangle),
           ),
-          SizedBox(
+          const SizedBox(
             height: 20,
           ),
           FloatingActionButton(
             onPressed: () {
               setState(() {
-                shapes.add(CircleShape(
-                    center: getCenterOfScreen(context), origin: origin));
-                scaleShapeFactor.add(1.0);
-                initialScaleShape.add(1.0);
+                shapes.add(
+                    CircleShape(center: getCenterOfScreen(widget.screenSize)));
               });
             },
-            shape: CircleBorder(),
-            child: Icon(Icons.circle),
+            shape: const CircleBorder(),
+            child: const Icon(Icons.circle),
           )
         ],
       ),
     );
   }
-}
-
-Offset getCenterOfScreen(BuildContext context) {
-  final screenSize = MediaQuery.of(context).size;
-  final centerX = screenSize.width / 2;
-  final centerY = screenSize.height / 2;
-  return Offset(centerX, centerY);
 }
