@@ -18,7 +18,7 @@ class _HomeScreenState extends State<HomeScreen> {
   double scaleFactor = 1.0;
 
   Offset? touchCenter;
-  Offset centerPoint = const Offset(0, 0);
+  late Offset centerPoint;
   Offset oldCenterPoint = const Offset(0, 0);
 
   late Offset oldStartDrag;
@@ -31,6 +31,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    centerPoint =
+        Offset(widget.screenSize.width / 2, widget.screenSize.height / 2);
     scale = 1.0;
     oldScale = scale;
   }
